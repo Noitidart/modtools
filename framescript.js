@@ -1,8 +1,10 @@
 const {classes: Cc, interfaces: Ci, manager: Cm, results: Cr, utils: Cu, Constructor: CC} = Components;
 
 var gContentFrameMessageManager = this;
-console.info('this:', this);
+var aSandbox;
 const cache_key = Math.random();
+
+console.info('this:', this);
 
 var msgListener = {
 	receiveMessage: function(aMsgEvent) {
@@ -19,12 +21,20 @@ function onFrameScriptLoad() {
 
 	addEventListener('DOMContentLoaded', contentLoaded, false);
 
-	if (content.document.readyState.state == 'ready' && content.document.URL.indexOf("modtools.org/index.php?action=settings") !== -1) {
-		contentLoaded();
+	console.error('ready state:', content.document.readyState, 'url:', content.document.URL)
+	if (content.document.readyState == 'complete') {
+		console.log('readYstate is ready', content.document.URL);
+		if (content.document.URL.indexOf("modtools.org/index.php?action=settings") !== -1) {
+			console.log('readyState is on modtools url so do stuff', content.document.URL);
+			contentLoaded();
+		} else {
+			console.log('readyState is NOT on modtools so do nothing', content.document.URL);
+		}
+	} else {
+		// do nothing, the domcontentloaded should handle it // crap maybe not? what if its right before going to complete, so its after the point DOMContentLoaded would fire, and the next event would be `load` // rawr
 	}
 }
 
-var aSandbox;
 function contentLoaded() {
 	
 	if (content.document.URL.indexOf("modtools.org/index.php?action=settings") !== -1) {
