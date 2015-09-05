@@ -4,6 +4,14 @@ var gContentFrameMessageManager = this;
 console.info('this:', this);
 const cache_key = Math.random();
 
+var core = {};
+var babyCore = {
+	clientId: Math.random(),
+	addon: {
+		id: 'ModTools@edwardhibbert'
+	}
+}
+
 var msgListener = {
 	receiveMessage: function(aMsgEvent) {
 		console.log('framescript getting aMsgEvent:', uneval(aMsgEvent));
@@ -13,14 +21,18 @@ var msgListener = {
 };
 
 function onFrameScriptLoad() {
-	console.log('loading framescript into:', content.window.location.href);
-	
-	addMessageListener('ModTools@edwardhibbert', msgListener);
+	babyCore.serverId = parseFloat(Components.stack.filename.substr(Components.stack.filename.lastIndexOf('?') + 1));
+	addMessageListener(babyCore.addon.id + babyCore.serverId, msgListener);
+	sendAsyncMessage(babyCore.addon.id, ['clientRequestingRegistration', babyCore.clientId]);
+}
 
+function frameScriptInit() {
+	// called when server grants registration in serverGrantingRegistration
 	addEventListener('DOMContentLoaded', contentLoaded, false);
-
-	if (content.document.readyState.state == 'ready' && content.document.URL.indexOf("modtools.org/index.php?action=settings") !== -1) {
+	if (content.document.readyState.state == 'ready' && content.window.location.href.indexOf("modtools.org/index.php?action=settings") !== -1) {
 		contentLoaded();
+	} else {
+		console.warn('either not ready or not modtools page:', content.window.location.href);
 	}
 }
 
@@ -53,6 +65,7 @@ function contentLoaded() {
 	}, false);
 	
 	console.log('will now load jquery crap');
+	Services.scriptloader.loadSubScript('chrome://modtools/content/jquery-1.10.2.min.js', aSandbox, 'UTF-8');
 	Services.scriptloader.loadSubScript('chrome://modtools/content/contentscript.js?' + cache_key, aSandbox, 'UTF-8');
 }
 
@@ -66,7 +79,14 @@ function unregisterFramescript() {
 }
 
 var funcsCallableFromBoot = {
-	unregisterFramescript: unregisterFramescript
+	unregisterFramescript: unregisterFramescript,
+	serverGrantingRegistration: function(aClientId, aCore) {
+		if (aClientId != babyCore.clientId) {
+			// not for this client
+			return;
+		}
+		core = aCore;
+	}
 };
 
 onFrameScriptLoad();
